@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Host Screen</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body style="font-family: sans-serif; text-align: center; padding: 50px;">
+<!-- Back to Main Menu Button -->
+<div style="text-align: left; padding: 10px;">
+  <button onclick="returnToMenu()" style="padding: 8px 16px; font-size: 14px; cursor: pointer;">
+    ← Back to Main Menu
+  </button>
+</div>
+  <h1>Host Game</h1>
+
+  <!-- Connection Status Indicator -->
+  <p id="connectionStatus" style="color: red; font-weight: bold;">Status: Disconnected (Server Not Found)</p>
+
+  <button id="hostBtn" onclick="createRoom()" style="font-size: 20px; padding: 10px 20px;">
+    Get a new lobby code
+  </button>
+  
+  <h2 id="roomDisplay"></h2>
+  <h3>Players Joined:</h3>
+  <ul id="playerList" style="list-style: none; padding: 0;"></ul>
+
+  <script>
+    // 1. Connect to backend
+    const socket = io('http://localhost:4000');
+
+    // 2. Show green status when server is reached
+    socket.on('connect', () => {
+      const status = document.getElementById('connectionStatus');
+      status.innerText = 'Status: Connected to Server!';
+      status.style.color = 'green';
+    });
+
+    // 3. Handle connection failure
+    socket.on('connect_error', () => {
+      const status = document.getElementById('connectionStatus');
+      status.innerText = 'Status: Cannot reach server at http://localhost:4000';
+      status.style.color = 'red';
+    });
+
+    function createRoom() {
+      socket.emit('create_room');
+    }
+
+    socket.on('room_created', ({ roomCode }) => {
+      document.getElementById('roomDisplay').innerText = `ROOM CODE: ${roomCode}`;
+      document.getElementById('hostBtn').style.display = 'none';
+    });
+
+    socket.on('player_list_updated', (players) => {
+      const list = document.getElementById('playerList');
+      list.innerHTML = '';
+      players.forEach(p => {
+        const li = document.createElement('li');
+        li.innerText = p.name;
+        list.appendChild(li);
+      });
+    });
+function returnToMenu() {
+  // Disconnect the player socket before leaving
+  if (typeof socket !== 'undefined') {
+    socket.disconnect();
+  }
+  // Navigate back to titlescreen.html
+  window.location.href = 'titlescreen.html';
+}
+  </script>
+</body>
+</html>

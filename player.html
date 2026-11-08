@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Player Screen</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body style="font-family: sans-serif; text-align: center; padding: 30px;">
+<!-- Back to Main Menu Button -->
+<div style="text-align: left; padding: 10px;">
+  <button onclick="returnToMenu()" style="padding: 8px 16px; font-size: 14px; cursor: pointer;">
+    ← Back to Main Menu
+  </button>
+</div>
+  <h1>Join Game</h1>
+  <input id="nameInput" placeholder="Your Name" style="display:block; margin: 10px auto; padding: 10px;"><br>
+  <input id="codeInput" placeholder="4-Letter Room Code" style="display:block; margin: 10px auto; padding: 10px;"><br>
+  <button onclick="joinGame()" style="padding: 10px 20px; font-size: 16px;">Join</button>
+
+  <h2 id="status"></h2>
+
+  <script>
+    // Point to the same backend server
+    const socket = io('http://localhost:4000');
+
+    function joinGame() {
+      const name = document.getElementById('nameInput').value;
+      const code = document.getElementById('codeInput').value;
+      // Send join attempt to backend
+      socket.emit('join_room', { roomCode: code, playerName: name });
+    }
+
+    socket.on('joined_successfully', ({ roomCode }) => {
+      document.getElementById('status').innerText = `Connected to Room: ${roomCode}`;
+    });
+
+    socket.on('error_message', (msg) => alert(msg));
+
+function returnToMenu() {
+  // Disconnect the player socket before leaving
+  if (typeof socket !== 'undefined') {
+    socket.disconnect();
+  }
+  // Navigate back to titlescreen.html
+  window.location.href = 'titlescreen.html';
+}
+  </script>
+</body>
+</html>
