@@ -17,7 +17,7 @@ const io = new Server(server, {
 const rooms = {};
 
 function generateCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const chars = '0123456789';
     let code = '';
     for (let i = 0; i < 4; i++) {
         code += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -28,7 +28,7 @@ function generateCode() {
 io.on('connection', (socket) => {
     console.log(`[CONNECTED] ${socket.id}`);
 
-    // 1. Host creates a room AND joins as Player 1
+    // Host creates a room AND joins as Player 1
     socket.on('create_room', ({ hostName }) => {
         const roomCode = generateCode();
         const name = hostName.trim() || 'Host';
@@ -46,7 +46,7 @@ io.on('connection', (socket) => {
         console.log(`[ROOM CREATED] ${name} opened room ${roomCode}`);
     });
 
-    // 2. Mobile players join the room
+    // Mobile players join the room
     socket.on('join_room', ({ roomCode, playerName }) => {
         const code = roomCode.toUpperCase();
         if (rooms[code]) {
@@ -61,7 +61,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 3. Handle live chat messages
+    // Handle live chat messages
     socket.on('send_chat', ({ roomCode, message, senderName }) => {
         const code = roomCode.toUpperCase();
         // Broadcast the message to everyone in the room (including the sender)
@@ -71,7 +71,7 @@ io.on('connection', (socket) => {
         });
     });
 
-    // 4. Handle player disconnects
+    // Handle player disconnects
     socket.on('disconnect', () => {
         console.log(`[DISCONNECTED] ${socket.id}`);
 
@@ -97,7 +97,7 @@ io.on('connection', (socket) => {
                     delete rooms[roomCode];
                 }
 
-                break; // Stop looping once found
+                break;
             }
         }
     });
