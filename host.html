@@ -1,56 +1,84 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Host Screen</title>
+  <title>Party Game Host Screen</title>
+  <!-- Load Socket.io library from CDN -->
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body style="font-family: sans-serif; text-align: center; padding: 50px;">
-<!-- Back to Main Menu Button -->
-<div style="text-align: left; padding: 10px;">
-  <button onclick="returnToMenu()" style="padding: 8px 16px; font-size: 14px; cursor: pointer;">
-    ← Back to Main Menu
-  </button>
-</div>
-  <h1>Host Game</h1>
-
-  <!-- Connection Status Indicator -->
-  <p id="connectionStatus" style="color: red; font-weight: bold;">Status: Disconnected (Server Not Found)</p>
-
-  <button id="hostBtn" onclick="createRoom()" style="font-size: 20px; padding: 10px 20px;">
-    Get a new lobby code
-  </button>
   
+  <div style="text-align: left; padding: 10px;">
+    <button onclick="returnToMenu()" style="padding: 8px 16px; font-size: 14px; cursor: pointer;">
+      ← Back to Main Menu
+    </button>
+  </div>
+
+  <h1>Party Game Host Screen</h1>
+  <p id="connectionStatus" style="color: red; font-weight: bold;">Status: Disconnected</p>
+
+  <!LOBBY SETUP SECTION>
+  <div id="lobbySetup">
+    <input id="hostNameInput" placeholder="Enter Host Player Name" style="padding: 10px; font-size: 16px; margin-bottom: 10px;"><br>
+    <button id="hostBtn" onclick="createRoom()" style="font-size: 20px; padding: 10px 20px; cursor: pointer;">
+      Host & Join Game
+    </button>
+  </div>
+
   <h2 id="roomDisplay"></h2>
+
   <h3>Players Joined:</h3>
-  <ul id="playerList" style="list-style: none; padding: 0;"></ul>
+  <ul id="playerList" style="list-style: none; padding: 0; font-size: 20px;"></ul>
+
+  <!CONTROLLER FOR HOST>
+  <div id="hostController" style="display: none; border: 2px solid #333; margin-top: 30px; padding: 20px; border-radius: 8px;">
+    <h2>Host Controls (will have more stuff later)</h2>
+    <p>You are in! Vote on a game to play first below:</p>
+    <button onclick="sendHostAction('Option A')" style="font-size: 18px; padding: 10px 20px; margin: 5px;">Option A</button>
+    <button onclick="sendHostAction('Option B')" style="font-size: 18px; padding: 10px 20px; margin: 5px;">Option B</button>
+  </div>
+
+<!Live Chat Box>
+<div id="chatSection" style="display: none; border: 1px solid #ccc; width: 300px; margin: 20px auto; padding: 10px; border-radius: 8px;">
+  <h3>Lobby Chat</h3>
+  <div id="chatMessages" style="height: 150px; overflow-y: auto; border: 1px solid #eee; text-align: left; padding: 5px; margin-bottom: 10px; background: #fff;"></div>
+  <input id="chatInput" placeholder="Type a message..." style="width: 65%; padding: 5px;">
+  <button onclick="sendChatMessage()" style="padding: 5px 10px;">Send</button>
+</div>
 
   <script>
-    // 1. Connect to backend
+    // Connect to your live backend on port 4000
     const socket = io('http://localhost:4000');
 
-    // 2. Show green status when server is reached
     socket.on('connect', () => {
       const status = document.getElementById('connectionStatus');
       status.innerText = 'Status: Connected to Server!';
       status.style.color = 'green';
     });
 
-    // 3. Handle connection failure
     socket.on('connect_error', () => {
       const status = document.getElementById('connectionStatus');
-      status.innerText = 'Status: Cannot reach server at http://localhost:4000';
+      status.innerText = 'Status: Cannot reach server. Is node app.js running?';
       status.style.color = 'red';
     });
 
+    // Send create request to app.js
     function createRoom() {
-      socket.emit('create_room');
+      const hostName = document.getElementById('hostNameInput').value;
+      if (!hostName) {
+        alert('Please enter a host name!');
+        return;
+      }
+      socket.emit('create_room', { hostName: hostName });
     }
 
+    // Receive room code from app.js
     socket.on('room_created', ({ roomCode }) => {
       document.getElementById('roomDisplay').innerText = `ROOM CODE: ${roomCode}`;
-      document.getElementById('hostBtn').style.display = 'none';
+      document.getElementById('lobbySetup').style.display = 'none';
+      document.getElementById('hostController').style.display = 'block';
     });
 
+    // Update player list on screen
     socket.on('player_list_updated', (players) => {
       const list = document.getElementById('playerList');
       list.innerHTML = '';
@@ -60,14 +88,53 @@
         list.appendChild(li);
       });
     });
-function returnToMenu() {
-  // Disconnect the player socket before leaving
-  if (typeof socket !== 'undefined') {
-    socket.disconnect();
-  }
-  // Navigate back to titlescreen.html
-  window.location.href = 'titlescreen.html';
+
+    function sendHostAction(actionChoice) {
+      console.log('Host selected:', actionChoice);
+      socket.emit('player_action', { choice: actionChoice });
+    }
+
+    function returnToMenu() {
+      if (typeof socket !== 'undefined') {
+        socket.disconnect();
+      }
+      window.location.href = 'titlescreen.html';
+    }
+
+// Variable to store room code locally once created
+let currentRoomCode = '';
+let currentHostName = '';
+
+// Update your existing room_created callback to save these details & reveal chat:
+socket.on('room_created', ({ roomCode }) => {
+  currentRoomCode = roomCode;
+  currentHostName = document.getElementById('hostNameInput').value || 'Host';
+  document.getElementById('roomDisplay').innerText = `ROOM CODE: ${roomCode}`;
+  document.getElementById('lobbySetup').style.display = 'none';
+  document.getElementById('hostController').style.display = 'block';
+  document.getElementById('chatSection').style.display = 'block'; // Show Chat
+});
+
+// Send chat message
+function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  if (!input.value.trim()) return;
+
+  socket.emit('send_chat', {
+    roomCode: currentRoomCode,
+    message: input.value,
+    senderName: currentSenderName
+  });
+  input.value = '';
 }
+
+// Receive and display chat message
+socket.on('receive_chat', ({ sender, text }) => {
+  const box = document.getElementById('chatMessages');
+  box.innerHTML += `<p style="margin: 4px 0;"><strong>${sender}:</strong> ${text}</p>`;
+  box.scrollTop = box.scrollHeight;
+});
+
   </script>
 </body>
 </html>

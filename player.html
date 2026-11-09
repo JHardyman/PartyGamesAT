@@ -1,48 +1,138 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Player Screen</title>
+  <title>Party Game Player Controller</title>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
-<body style="font-family: sans-serif; text-align: center; padding: 30px;">
-<!-- Back to Main Menu Button -->
-<div style="text-align: left; padding: 10px;">
-  <button onclick="returnToMenu()" style="padding: 8px 16px; font-size: 14px; cursor: pointer;">
-    ← Back to Main Menu
-  </button>
-</div>
-  <h1>Join Game</h1>
-  <input id="nameInput" placeholder="Your Name" style="display:block; margin: 10px auto; padding: 10px;"><br>
-  <input id="codeInput" placeholder="4-Letter Room Code" style="display:block; margin: 10px auto; padding: 10px;"><br>
-  <button onclick="joinGame()" style="padding: 10px 20px; font-size: 16px;">Join</button>
+<body style="font-family: sans-serif; text-align: center; padding: 50px;">
 
-  <h2 id="status"></h2>
+  <div style="text-align: left; padding: 10px;">
+    <button onclick="returnToMenu()" style="padding: 8px 16px; font-size: 14px; cursor: pointer;">
+      ← Back to Main Menu
+    </button>
+  </div>
+
+  <h1>Join Room</h1>
+  <p id="connectionStatus" style="color: red; font-weight: bold;">Status: Disconnected</p>
+
+  <div id="joinForm">
+    <input id="playerName" placeholder="Enter Your Name" style="padding: 10px; font-size: 16px; margin: 5px;"><br>
+    <input id="roomCode" placeholder="4-Letter Room Code" style="padding: 10px; font-size: 16px; margin: 5px; text-transform: uppercase;"><br>
+    <button onclick="joinRoom()" style="font-size: 20px; padding: 10px 20px; margin-top: 10px; cursor: pointer;">
+      Join Room
+    </button>
+  </div>
+
+  <h3>Players Joined:</h3>
+  <ul id="playerList" style="list-style: none; padding: 0; font-size: 20px;"></ul>
+
+  <div id="gameController" style="display: none; margin-top: 30px;">
+    <h2 id="welcomeMsg"></h2>
+    <p>You are in! Vote on a game to play first below: (doesn't do anything right now)</p>
+    <button onclick="sendAction('Option A')" style="font-size: 18px; padding: 15px 30px; margin: 10px;">Option A</button>
+    <button onclick="sendAction('Option B')" style="font-size: 18px; padding: 15px 30px; margin: 10px;">Option B</button>
+  </div>
+
+<!Live Chat Box>
+<div id="chatSection" style="display: none; border: 1px solid #ccc; width: 300px; margin: 20px auto; padding: 10px; border-radius: 8px;">
+  <h3>Lobby Chat</h3>
+  <div id="chatMessages" style="height: 150px; overflow-y: auto; border: 1px solid #eee; text-align: left; padding: 5px; margin-bottom: 10px; background: #fff;"></div>
+  <input id="chatInput" placeholder="Type a message..." style="width: 65%; padding: 5px;">
+  <button onclick="sendChatMessage()" style="padding: 5px 10px;">Send</button>
+</div>
 
   <script>
-    // Point to the same backend server
     const socket = io('http://localhost:4000');
 
-    function joinGame() {
-      const name = document.getElementById('nameInput').value;
-      const code = document.getElementById('codeInput').value;
-      // Send join attempt to backend
+    socket.on('connect', () => {
+      const status = document.getElementById('connectionStatus');
+      status.innerText = 'Status: Connected to Server!';
+      status.style.color = 'green';
+    });
+
+    socket.on('connect_error', () => {
+      const status = document.getElementById('connectionStatus');
+      status.innerText = 'Status: Cannot reach server.';
+      status.style.color = 'red';
+    });
+
+    function joinRoom() {
+      const name = document.getElementById('playerName').value;
+      const code = document.getElementById('roomCode').value;
+
+      if (!name || !code) {
+        alert('Please fill in both fields!');
+        return;
+      }
       socket.emit('join_room', { roomCode: code, playerName: name });
     }
 
     socket.on('joined_successfully', ({ roomCode }) => {
-      document.getElementById('status').innerText = `Connected to Room: ${roomCode}`;
+      document.getElementById('joinForm').style.display = 'none';
+      document.getElementById('gameController').style.display = 'block';
+      document.getElementById('welcomeMsg').innerText = `Room: ${roomCode}`;
     });
 
-    socket.on('error_message', (msg) => alert(msg));
+    socket.on('error_message', (msg) => {
+      alert(msg);
+    });
 
-function returnToMenu() {
-  // Disconnect the player socket before leaving
-  if (typeof socket !== 'undefined') {
-    socket.disconnect();
-  }
-  // Navigate back to titlescreen.html
-  window.location.href = 'titlescreen.html';
+    function sendAction(choice) {
+      console.log('Player action:', choice);
+      socket.emit('player_action', { choice: choice });
+    }
+
+    function returnToMenu() {
+      if (typeof socket !== 'undefined') {
+        socket.disconnect();
+      }
+      window.location.href = 'titlescreen.html';
+    }
+
+    // Update player list on screen (copied from host. was only there originally)
+    socket.on('player_list_updated', (players) => {
+      const list = document.getElementById('playerList');
+      list.innerHTML = '';
+      players.forEach(p => {
+        const li = document.createElement('li');
+        li.innerText = p.name;
+        list.appendChild(li);
+      });
+    });
+
+let currentRoomCode = '';
+let currentSenderName = '';
+
+// Update your joined_successfully callback to save details & reveal chat:
+socket.on('joined_successfully', ({ roomCode }) => {
+  currentRoomCode = roomCode;
+  currentSenderName = document.getElementById('playerName').value;
+  document.getElementById('joinForm').style.display = 'none';
+  document.getElementById('gameController').style.display = 'block';
+  document.getElementById('welcomeMsg').innerText = `Room: ${roomCode}`;
+  document.getElementById('chatSection').style.display = 'block'; // Show Chat
+});
+
+// Send chat message
+function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  if (!input.value.trim()) return;
+
+  socket.emit('send_chat', {
+    roomCode: currentRoomCode,
+    message: input.value,
+    senderName: currentSenderName
+  });
+  input.value = '';
 }
+
+// Receive and display chat message
+socket.on('receive_chat', ({ sender, text }) => {
+  const box = document.getElementById('chatMessages');
+  box.innerHTML += `<p style="margin: 4px 0;"><strong>${sender}:</strong> ${text}</p>`;
+  box.scrollTop = box.scrollHeight;
+});
+
   </script>
 </body>
 </html>

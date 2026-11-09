@@ -1,12 +1,37 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\Users\\isabe\\OneDrive\\Documents\\PartyGamesAT\\Backend\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{28467D11-EA47-6A05-AA27-145AE108EBEE}|Backend\\Backend.esproj|c:\\users\\isabe\\onedrive\\documents\\partygamesat\\backend\\backend\\app.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{28467D11-EA47-6A05-AA27-145AE108EBEE}|Backend\\Backend.esproj|solutionrelative:backend\\app.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
       "VerticalTabListWidth": 256,
-      "DocumentGroups": []
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "app.js",
+              "DocumentMoniker": "C:\\Users\\isabe\\OneDrive\\Documents\\PartyGamesAT\\Backend\\Backend\\app.js",
+              "RelativeDocumentMoniker": "Backend\\app.js",
+              "ToolTip": "C:\\Users\\isabe\\OneDrive\\Documents\\PartyGamesAT\\Backend\\Backend\\app.js",
+              "RelativeToolTip": "Backend\\app.js",
+              "ViewState": "AgIAAFIAAAAAAAAAAAARwF8AAACZAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2026-11-09T02:48:00.95Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
     }
   ]
 }
